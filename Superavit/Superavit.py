@@ -13,7 +13,7 @@ class Main:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.config(width=320, height=450)
+        self.root.config(width=300, height=450)
         self.root.resizable(width=False, height=False)
         p = PhotoImage(file='Base//1.Logo//logo.png')
         self.root.iconphoto(False, p)
@@ -68,12 +68,12 @@ class Main:
         self.label_plano.config(bg='#ffffff')
 
         # Botões
-        self.botao_gerar = tk.Button(self.root, text="       Gerar Tabela        ", command=self.importar_tabelas)
+        self.botao_gerar = tk.Button(self.root, text="Gerar Tabela", command=self.importar_tabelas)
+        self.botao_gerar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_gerar.place(x=50, y=360)
-        self.botao_gerar.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
-        self.botao_sair = tk.Button(self.root, text="               Sair               ", command=self.root.destroy)
+        self.botao_sair = tk.Button(self.root, text="Sair", command=self.root.destroy)
+        self.botao_sair.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_sair.place(x=50, y=390)
-        self.botao_sair.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
 
         # Checkbox
         self.var_patrocinadora = tk.IntVar()

@@ -45,18 +45,18 @@ class Main:
         self.caixa_cpf.config(bg='#ffffff')
 
         # Botões
-        self.botao_gerar = tk.Button(self.root, text="       Gerar Tabela        ", command=self.coletar_valores)
+        self.botao_gerar = tk.Button(self.root, text="Gerar Tabela", command=self.coletar_valores)
         self.botao_gerar.place(x=30, y=415)
-        self.botao_gerar.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
+        self.botao_gerar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_exportar = tk.Button(self.root, text="Exportar para o Excel", command=self.exportar_excel)
         self.botao_exportar.place(x=30, y=450)
-        self.botao_exportar.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
-        self.botao_CPF = tk.Button(self.caixa_cpf, text="       Analisar CPF      ", command=self.cpf_analise)
+        self.botao_exportar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
+        self.botao_CPF = tk.Button(self.caixa_cpf, text="Analisar CPF", command=self.cpf_analise)
         self.botao_CPF.grid(row=2, pady=5, sticky="W")
-        self.botao_CPF.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
-        self.botao_sair = tk.Button(self.root, text="               Sair               ", command=self.root.destroy)
+        self.botao_CPF.config(width=15, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
+        self.botao_sair = tk.Button(self.root, text="Sair", command=self.root.destroy)
+        self.botao_sair.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_sair.place(x=30, y=600)
-        self.botao_sair.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
 
         # Labels
         self.label_posicao = tk.Label(self.root, text="Faixa")
@@ -124,7 +124,7 @@ class Main:
         self.valor_final = tk.Text(self.root, height=1.2, width=12, bg="#f2f2f2")
         self.valor_final.insert(tk.END, 'max')
         self.valor_final.place(x=160, y=175)
-        self.valor_CPF = tk.Text(self.caixa_cpf, height=1.2, width=13, bg="#f2f2f2")
+        self.valor_CPF = tk.Text(self.caixa_cpf, height=1.2, width=14, bg="#f2f2f2")
         self.valor_CPF.insert(tk.END, '')
         self.valor_CPF.grid(row=0, pady=5)
 
