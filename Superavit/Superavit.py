@@ -13,7 +13,7 @@ class Main:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.config(width=300, height=450)
+        self.root.config(width=300, height=500)
         self.root.resizable(width=False, height=False)
         p = PhotoImage(file='Base//1.Logo//logo.png')
         self.root.iconphoto(False, p)
@@ -49,31 +49,33 @@ class Main:
                                          command=self.autopatrocinado)
         self.menu_status.config(width=15, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.menu_status['menu'].config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black",)
-        self.menu_status.place(x=50, y=50)
+        self.menu_status.place(x=80, y=50)
         self.variavel_plano = tk.StringVar()
         self.variavel_plano.set("Visão Telefônica")
-        self.menu_plano = tk.OptionMenu(self.root, self.variavel_plano, 'Visão Telefônica', 'Visão Multi')
-        self.menu_plano.place(x=50, y=120)
+        self.menu_plano = tk.OptionMenu(self.root, self.variavel_plano, 'Visão Telefônica', 'Visão Multi',
+                                         command=self.tipo_plano)
+        self.menu_plano.place(x=80, y=120)
         self.menu_plano.config(width=15, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.menu_plano['menu'].config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
 
         # Labels
         self.label_status = tk.Label(self.root, text="Status do participante")
-        self.label_status.config(font=("Arial", 10))
-        self.label_status.place(x=50, y=25)
-        self.label_status.config(bg='#ffffff')
+        self.label_status.config(font=("Arial", 10), bg='#ffffff')
+        self.label_status.place(x=80, y=25)
         self.label_plano = tk.Label(self.root, text="Tipo de plano")
-        self.label_plano.config(font=("Arial", 10))
-        self.label_plano.place(x=50, y=98)
-        self.label_plano.config(bg='#ffffff')
+        self.label_plano.config(font=("Arial", 10), bg='#ffffff')
+        self.label_plano.place(x=100, y=98)
+        self.label_mes = tk.Label(self.root, text="Mês referência")
+        self.label_mes.config(font=("Arial", 10), bg='#ffffff')
+        self.label_mes.place(x=96, y=310)
 
         # Botões
         self.botao_gerar = tk.Button(self.root, text="Gerar Tabela", command=self.importar_tabelas)
         self.botao_gerar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
-        self.botao_gerar.place(x=50, y=360)
+        self.botao_gerar.place(x=80, y=400)
         self.botao_sair = tk.Button(self.root, text="Sair", command=self.root.destroy)
         self.botao_sair.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
-        self.botao_sair.place(x=50, y=390)
+        self.botao_sair.place(x=80, y=430)
 
         # Checkbox
         self.var_patrocinadora = tk.IntVar()
@@ -90,6 +92,12 @@ class Main:
         self.check_data.place(x=50, y=240)
         self.check_data.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
 
+        # SpinBox
+        self.mes_spin = tk.Spinbox(self.root, from_=1, to=12, width=10, increment=1)
+        self.mes_spin.delete(0, "end")
+        self.mes_spin.insert(0, str(self.hoje.month))
+        self.mes_spin.place(x=106, y=340)
+
         self.root.mainloop()
 
     def autopatrocinado(self, *args):
@@ -101,6 +109,20 @@ class Main:
         elif self.variavel_status.get() == 'Autopatrocinado':
             self.check_patrocinadora.config(state=DISABLED)
             self.check_data.config(state=DISABLED)
+
+    def tipo_plano(self, *args):
+        if self.variavel_plano.get() == 'Visão Telefônica':
+            self.menu_status = tk.OptionMenu(self.root, self.variavel_status, 'Autopatrocinado', 'Ativo',
+                                             command=self.autopatrocinado)
+            self.menu_status.config(width=15, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
+            self.menu_status['menu'].config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black", )
+            self.menu_status.place(x=80, y=50)
+        elif self.variavel_plano.get() == 'Visão Multi':
+            self.menu_status = tk.OptionMenu(self.root, self.variavel_status, 'Autopatrocinado',
+                                             command=self.autopatrocinado)
+            self.menu_status.config(width=15, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
+            self.menu_status['menu'].config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black", )
+            self.menu_status.place(x=80, y=50)
 
     def check_data(self):
         # Tira a seleção e bloqueia os checkbox data quando o checkbox autopatrocinado não é selecionado
@@ -160,14 +182,21 @@ class Main:
             dias_diferenca = (pd.to_datetime(self.hoje) - df_cotas_inc['Data'].iloc[0]).days
             for i in range(dias_diferenca, -1, -1):
                 data_repetida.append(str((pd.to_datetime(self.hoje) - pd.DateOffset(days=i)).date()))
+
+            date_str = []
+            for i in df_cotas_inc.index:
+                date_str.append(str(df_cotas_inc['Data'][i].date()))
+            df_cotas_inc['Data'] = date_str
+
             barra = []
-            falta = 0
+            falta = list(df_cotas_inc['Data'])[0]
             for i in data_repetida:
-                if i in str(df_cotas_inc['Data']):
+                if i in list(df_cotas_inc['Data']):
                     barra.append(pd.Series(df_cotas_inc[df_cotas_inc['Data'] == i]['Cotas'].values).to_list()[0])
                     falta = i
                 else:
                     barra.append(pd.Series(df_cotas_inc[df_cotas_inc['Data'] == falta]['Cotas'].values).to_list()[0])
+
             self.df_cotas = pd.DataFrame(data_repetida, columns=['Data'])
             self.df_cotas['Cotas'] = barra
             self.df_cotas['Data'] = pd.to_datetime(self.df_cotas['Data'])
@@ -185,54 +214,53 @@ class Main:
                         # Importando o saldo da pasta Visão Multi Autopatrocinado
                         xls8 = pd.ExcelFile(
                             'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(
-                                self.hoje.month - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
                         self.df_saldo = pd.read_excel(xls8)
 
                     elif self.plano == 'Visão Multi' and self.status == 'Autopatrocinado':
                         # Importando o saldo da pasta Visão Telefônica Autopatrocinado
                         xls8 = pd.ExcelFile(
                             'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(
-                                self.hoje.month - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
                         self.df_saldo = pd.read_excel(xls8)
 
                     elif self.plano == 'Visão Telefônica' and self.status == 'Ativo':
                         # Importando o saldo da pasta Visão Telefônica Ativo
                         xls8 = pd.ExcelFile(
                             'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(
-                                self.hoje.month - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
                         self.df_saldo = pd.read_excel(xls8)
 
                     try:
                         # Importando a data de pagamento da patrocinadora
                         xls3 = pd.ExcelFile(
-                            'Base//Pagamentos_patrocinadora//Pagamentos_Patrocinadora_' + str(self.hoje.month - 1).zfill(
-                                2) + '_' + str(
-                                self.hoje.year) + '.xlsx')
+                            'Base//Pagamentos_patrocinadora//Pagamentos_Patrocinadora_' + str(
+                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
                         self.df_patrocinadora = pd.read_excel(xls3)
-
                         # Importando o abatimento dos ativos e autopatrocinados
-                        abatimento_nome = 'Abatimento_' + str(self.hoje.month - 1).zfill(2) + '_' + str(self.hoje.year)
+                        abatimento_nome = 'Abatimento_' + str(int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(
+                            self.hoje.year)
                         xls4 = pd.ExcelFile(
                             'Base//Abatimentos//' + self.status + '//' + self.plano + '//' + abatimento_nome + '.xlsx')
                         self.df_abatimento = pd.read_excel(xls4)
                         # Importando a retirada dos ativos e autopatrocinados
                         xls6 = pd.ExcelFile(
                             'Base//Retirada//' + self.status + '//' + self.plano + '//Retirada_' + str(
-                                self.hoje.month - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
                         self.df_retirada = pd.read_excel(xls6)
-
                         # Definindo o nome das colunas
-                        self.saldo_cotas_antes = 'Saldo_cotas_' + str(self.hoje.month - 1).zfill(2) + '_' + str(
+                        self.saldo_cotas_antes = 'Saldo_cotas_' + str(int(self.mes_spin.get()) - 1).zfill(
+                            2) + '_' + str(self.hoje.year)
+                        self.saldo_cotas_depois = 'Saldo_cotas_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
                             self.hoje.year)
-                        self.saldo_cotas_depois = 'Saldo_cotas_' + str(self.hoje.month).zfill(2) + '_' + str(self.hoje.year)
-                        self.saldo_real_antes = 'Saldo_real_' + str(self.hoje.month - 1).zfill(2) + '_' + str(
+                        self.saldo_real_antes = 'Saldo_real_' + str(int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(
                             self.hoje.year)
-                        self.saldo_real_depois = 'Saldo_real_' + str(self.hoje.month).zfill(2) + '_' + str(self.hoje.year)
-                        self.abatimento_cotas = 'Abatimento_cotas_' + str(self.hoje.month - 1).zfill(2) + '_' + str(
+                        self.saldo_real_depois = 'Saldo_real_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
                             self.hoje.year)
-                        self.abatimento_real = 'Abatimento_real_' + str(self.hoje.month - 1).zfill(2) + '_' + str(
-                            self.hoje.year)
-
+                        self.abatimento_cotas = 'Abatimento_cotas_' + str(int(self.mes_spin.get()) - 1).zfill(
+                            2) + '_' + str(self.hoje.year)
+                        self.abatimento_real = 'Abatimento_real_' + str(int(self.mes_spin.get()) - 1).zfill(
+                            2) + '_' + str(self.hoje.year)
                         # Caso a tabela não possua data e foi marcado o checkbox data o programa abre a entrada da data
                         if condicao_data == 1:
                             self.mensagem_data()
@@ -361,7 +389,6 @@ class Main:
                                                     self.df_abatimento['Data'])):
 
                                                 # Chama a função gerar tabela
-
                                                 self.gerar_tabela()
                                             else:
                                                 self.primeiro_aviso = 'Erro na coluna Data'
@@ -529,42 +556,41 @@ class Main:
 
         try:
             # Exporta a tabela análise, saldo e retirada para o Excel
-            xls10 = 'Base//Analise//' + self.status + '//' + self.plano + '//Analise_' + str(self.hoje.month).zfill(
+            xls10 = 'Base//Analise//' + self.status + '//' + self.plano + '//Analise_' + str(self.mes_spin.get()).zfill(
                 2) + '_' + str(self.hoje.year) + '.xlsx'
             analise.to_excel(xls10, index=False)
             df_retirar = analise[(analise[self.saldo_cotas_depois] < 0) & (
                 ~analise['Data_cota'].isnull())][['CPF', 'Status', self.saldo_cotas_depois]]
             xls12 = 'Base//Retirada//' + self.status + '//' + self.plano + '//Retirada_' + str(
-                self.hoje.month).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
+                self.mes_spin.get()).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
             df_retirar.to_excel(xls12, index=False)
             if self.plano == 'Visão Telefônica' and self.status == 'Autopatrocinado':
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
                 df_saldo_final = df_saldo_final.rename(columns={self.saldo_cotas_depois: self.saldo_cotas_antes})
-                xls11 = 'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(self.hoje.month - 1).zfill(
-                    2) + '_' + str(self.hoje.year) + '.xlsx'
+                xls11 = 'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(
+                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
                 df_saldo_final.to_excel(xls11, index=False)
 
             elif self.plano == 'Visão Multi' and self.status == 'Autopatrocinado':
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
-                xls11 = 'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(self.hoje.month).zfill(
+                xls11 = 'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(self.mes_spin.get()).zfill(
                     2) + '_' + str(self.hoje.year) + '.xlsx'
                 df_saldo_final.to_excel(xls11, index=False)
 
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
                 df_saldo_final = df_saldo_final.rename(columns={self.saldo_cotas_depois: self.saldo_cotas_antes})
-                xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(self.hoje.month - 1).zfill(
+                xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(int(self.mes_spin.get()) - 1).zfill(
                     2) + '_' + str(self.hoje.year) + '.xlsx'
                 df_saldo_final.to_excel(xls11, index=False)
 
             elif self.plano == 'Visão Telefônica' and self.status == 'Ativo':
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
-                df_saldo_final = df_saldo_final.rename(columns={self.saldo_cotas_depois: self.saldo_cotas_antes})
-                xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(self.hoje.month).zfill(
+                xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(self.mes_spin.get()).zfill(
                     2) + '_' + str(self.hoje.year) + '.xlsx'
                 df_saldo_final.to_excel(xls11, index=False)
 
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
-                xls11 = 'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(self.hoje.month).zfill(
+                xls11 = 'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(self.mes_spin.get()).zfill(
                     2) + '_' + str(self.hoje.year) + '.xlsx'
                 df_saldo_final.to_excel(xls11, index=False)
 
@@ -764,24 +790,24 @@ class Main:
 
         try:
             # Exporta a tabela análise, saldo e retirada dos ativos e autopatrocinados para o Excel
-            xls16 = 'Base//Analise//' + self.status + '//' + self.plano + '//Analise_' + str(self.hoje.month).zfill(
+            xls16 = 'Base//Analise//' + self.status + '//' + self.plano + '//Analise_' + str(self.mes_spin.get()).zfill(
                 2) + '_' + str(self.hoje.year) + '.xlsx'
             analise.to_excel(xls16, index=False)
+
             df_retirar = analise[(analise[self.saldo_cotas_depois] < 0) & (
                 ~analise['Data_cota'].isnull())][['CPF', 'Status', self.saldo_cotas_depois]]
             xls18 = 'Base//Retirada//' + self.status + '//' + self.plano + '//Retirada_' + str(
-                self.hoje.month).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
+                self.mes_spin.get()).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
             df_retirar.to_excel(xls18, index=False)
-
 
             df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
             df_saldo_final = df_saldo_final.rename(columns={self.saldo_cotas_depois: self.saldo_cotas_antes})
-            xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(self.hoje.month).zfill(
+            xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(self.mes_spin.get()).zfill(
                 2) + '_' + str(self.hoje.year) + '.xlsx'
             df_saldo_final.to_excel(xls11, index=False)
 
             df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
-            xls11 = 'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(self.hoje.month).zfill(
+            xls11 = 'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(self.mes_spin.get()).zfill(
                 2) + '_' + str(self.hoje.year) + '.xlsx'
             df_saldo_final.to_excel(xls11, index=False)
 
@@ -814,9 +840,8 @@ class Main:
         botao_aviso.config(bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         # Label
         label_aviso = tk.Label(aviso_janela, text=str(self.primeiro_aviso) + '\n' + str(self.segundo_aviso))
-        label_aviso.config(font=("Courier", 10))
+        label_aviso.config(font=("Courier", 10), bg='#ffffff')
         label_aviso.place(x=40, y=60)
-        label_aviso.config(bg='#ffffff')
 
 
 Main()
