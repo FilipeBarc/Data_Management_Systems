@@ -70,6 +70,7 @@ class Main:
         self.label_mes.place(x=96, y=310)
 
         # Botões
+        self.root.bind("<Return>", (lambda event: self.importar_tabelas()))
         self.botao_gerar = tk.Button(self.root, text="Gerar Tabela", command=self.importar_tabelas)
         self.botao_gerar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_gerar.place(x=80, y=400)
@@ -133,7 +134,6 @@ class Main:
             self.check_data.config(state=DISABLED)
 
     def importar_tabelas(self):
-
         # Coleta os valores selecionados na primeira interface
         self.status = self.variavel_status.get()
         self.condicao_patrocinadora = self.var_patrocinadora.get()
@@ -209,69 +209,130 @@ class Main:
                     self.aviso()
 
                 else:
+                    if self.mes_spin.get() != 1:
 
-                    if self.plano == 'Visão Telefônica' and self.status == 'Autopatrocinado':
-                        # Importando o saldo da pasta Visão Multi Autopatrocinado
-                        xls8 = pd.ExcelFile(
-                            'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(
-                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
-                        self.df_saldo = pd.read_excel(xls8)
+                        if self.plano == 'Visão Telefônica' and self.status == 'Autopatrocinado':
+                            # Importando o saldo da pasta Visão Multi Autopatrocinado
+                            xls8 = pd.ExcelFile(
+                                'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(
+                                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                            self.df_saldo = pd.read_excel(xls8)
 
-                    elif self.plano == 'Visão Multi' and self.status == 'Autopatrocinado':
-                        # Importando o saldo da pasta Visão Telefônica Autopatrocinado
-                        xls8 = pd.ExcelFile(
-                            'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(
-                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
-                        self.df_saldo = pd.read_excel(xls8)
+                        elif self.plano == 'Visão Multi' and self.status == 'Autopatrocinado':
+                            # Importando o saldo da pasta Visão Telefônica Autopatrocinado
+                            xls8 = pd.ExcelFile(
+                                'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(
+                                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                            self.df_saldo = pd.read_excel(xls8)
 
-                    elif self.plano == 'Visão Telefônica' and self.status == 'Ativo':
-                        # Importando o saldo da pasta Visão Telefônica Ativo
-                        xls8 = pd.ExcelFile(
-                            'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(
-                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
-                        self.df_saldo = pd.read_excel(xls8)
+                        elif self.plano == 'Visão Telefônica' and self.status == 'Ativo':
+                            # Importando o saldo da pasta Visão Telefônica Ativo
+                            xls8 = pd.ExcelFile(
+                                'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(
+                                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                            self.df_saldo = pd.read_excel(xls8)
 
-                    try:
-                        # Importando a data de pagamento da patrocinadora
-                        xls3 = pd.ExcelFile(
-                            'Base//Pagamentos_patrocinadora//Pagamentos_Patrocinadora_' + str(
-                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
-                        self.df_patrocinadora = pd.read_excel(xls3)
-                        # Importando o abatimento dos ativos e autopatrocinados
-                        abatimento_nome = 'Abatimento_' + str(int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(
-                            self.hoje.year)
-                        xls4 = pd.ExcelFile(
-                            'Base//Abatimentos//' + self.status + '//' + self.plano + '//' + abatimento_nome + '.xlsx')
-                        self.df_abatimento = pd.read_excel(xls4)
-                        # Importando a retirada dos ativos e autopatrocinados
-                        xls6 = pd.ExcelFile(
-                            'Base//Retirada//' + self.status + '//' + self.plano + '//Retirada_' + str(
-                                int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
-                        self.df_retirada = pd.read_excel(xls6)
-                        # Definindo o nome das colunas
-                        self.saldo_cotas_antes = 'Saldo_cotas_' + str(int(self.mes_spin.get()) - 1).zfill(
-                            2) + '_' + str(self.hoje.year)
-                        self.saldo_cotas_depois = 'Saldo_cotas_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
-                            self.hoje.year)
-                        self.saldo_real_antes = 'Saldo_real_' + str(int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(
-                            self.hoje.year)
-                        self.saldo_real_depois = 'Saldo_real_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
-                            self.hoje.year)
-                        self.abatimento_cotas = 'Abatimento_cotas_' + str(int(self.mes_spin.get()) - 1).zfill(
-                            2) + '_' + str(self.hoje.year)
-                        self.abatimento_real = 'Abatimento_real_' + str(int(self.mes_spin.get()) - 1).zfill(
-                            2) + '_' + str(self.hoje.year)
-                        # Caso a tabela não possua data e foi marcado o checkbox data o programa abre a entrada da data
-                        if condicao_data == 1:
-                            self.mensagem_data()
-                        # Caso a tabela possua data e não foi marcado o checkbox data o programa vai criar as tabelas
-                        else:
-                            self.verifica_coluna()
+                        try:
+                            # Importando a data de pagamento da patrocinadora
+                            xls3 = pd.ExcelFile(
+                                'Base//Pagamentos_patrocinadora//Pagamentos_Patrocinadora_' + str(
+                                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                            self.df_patrocinadora = pd.read_excel(xls3)
+                            # Importando o abatimento dos ativos e autopatrocinados
+                            abatimento_nome = 'Abatimento_' + str(int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(
+                                self.hoje.year)
+                            xls4 = pd.ExcelFile(
+                                'Base//Abatimentos//' + self.status + '//' + self.plano + '//' + abatimento_nome + '.xlsx')
+                            self.df_abatimento = pd.read_excel(xls4)
+                            # Importando a retirada dos ativos e autopatrocinados
+                            xls6 = pd.ExcelFile(
+                                'Base//Retirada//' + self.status + '//' + self.plano + '//Retirada_' + str(
+                                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx')
+                            self.df_retirada = pd.read_excel(xls6)
+                            # Definindo o nome das colunas
+                            self.saldo_cotas_antes = 'Saldo_cotas_' + str(int(self.mes_spin.get()) - 1).zfill(
+                                2) + '_' + str(self.hoje.year)
+                            self.saldo_cotas_depois = 'Saldo_cotas_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
+                                self.hoje.year)
+                            self.saldo_real_antes = 'Saldo_real_' + str(int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(
+                                self.hoje.year)
+                            self.saldo_real_depois = 'Saldo_real_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
+                                self.hoje.year)
+                            self.abatimento_cotas = 'Abatimento_cotas_' + str(int(self.mes_spin.get()) - 1).zfill(
+                                2) + '_' + str(self.hoje.year)
+                            self.abatimento_real = 'Abatimento_real_' + str(int(self.mes_spin.get()) - 1).zfill(
+                                2) + '_' + str(self.hoje.year)
+                            # Caso a tabela não possua data e foi marcado o checkbox data o programa abre a entrada da data
+                            if condicao_data == 1:
+                                self.mensagem_data()
+                            # Caso a tabela possua data e não foi marcado o checkbox data o programa vai criar as tabelas
+                            else:
+                                self.verifica_coluna()
 
-                    except Exception:
-                        self.primeiro_aviso = 'Erro na pasta Base'
-                        self.segundo_aviso = 'Problemas com as tabelas'
-                        self.aviso()
+                        except Exception:
+                            self.primeiro_aviso = 'Erro na pasta Base'
+                            self.segundo_aviso = 'Problemas com as tabelas'
+                            self.aviso()
+
+                    else:
+                        if self.plano == 'Visão Telefônica' and self.status == 'Autopatrocinado':
+                            # Importando o saldo da pasta Visão Multi Autopatrocinado
+                            xls8 = pd.ExcelFile(
+                                'Base//Saldo//Autopatrocinado//Visão Multi//Saldo_' + str(12) + '_' + str(
+                                    int(self.hoje.year) - 1) + '.xlsx')
+                            self.df_saldo = pd.read_excel(xls8)
+
+                        elif self.plano == 'Visão Multi' and self.status == 'Autopatrocinado':
+                            # Importando o saldo da pasta Visão Telefônica Autopatrocinado
+                            xls8 = pd.ExcelFile(
+                                'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(12) + '_' + str(
+                                    int(self.hoje.year) - 1) + '.xlsx')
+                            self.df_saldo = pd.read_excel(xls8)
+
+                        elif self.plano == 'Visão Telefônica' and self.status == 'Ativo':
+                            # Importando o saldo da pasta Visão Telefônica Ativo
+                            xls8 = pd.ExcelFile(
+                                'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(12) + '_' + str(
+                                    int(self.hoje.year) - 1) + '.xlsx')
+                            self.df_saldo = pd.read_excel(xls8)
+
+                        try:
+                            # Importando a data de pagamento da patrocinadora
+                            xls3 = pd.ExcelFile(
+                                'Base//Pagamentos_patrocinadora//Pagamentos_Patrocinadora_' + str(12) + '_' + str(
+                                    int(self.hoje.year) - 1) + '.xlsx')
+                            self.df_patrocinadora = pd.read_excel(xls3)
+                            # Importando o abatimento dos ativos e autopatrocinados
+                            abatimento_nome = 'Abatimento_' + str(12) + '_' + str(int(self.hoje.year) - 1)
+                            xls4 = pd.ExcelFile(
+                                'Base//Abatimentos//' + self.status + '//' + self.plano + '//' + abatimento_nome + '.xlsx')
+                            self.df_abatimento = pd.read_excel(xls4)
+                            # Importando a retirada dos ativos e autopatrocinados
+                            xls6 = pd.ExcelFile(
+                                'Base//Retirada//' + self.status + '//' + self.plano + '//Retirada_' + str(
+                                    12) + '_' + str(int(self.hoje.year) - 1) + '.xlsx')
+                            self.df_retirada = pd.read_excel(xls6)
+                            # Definindo o nome das colunas
+                            self.saldo_cotas_antes = 'Saldo_cotas_' + str(12) + '_' + str(int(self.hoje.year) - 1)
+                            self.saldo_cotas_depois = 'Saldo_cotas_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
+                                self.hoje.year)
+                            self.saldo_real_antes = 'Saldo_real_' + str(12) + '_' + str(int(self.hoje.year) - 1)
+                            self.saldo_real_depois = 'Saldo_real_' + str(self.mes_spin.get()).zfill(2) + '_' + str(
+                                self.hoje.year)
+                            self.abatimento_cotas = 'Abatimento_cotas_' + str(12) + '_' + str(int(self.hoje.year) - 1)
+                            self.abatimento_real = 'Abatimento_real_' + str(12) + '_' + str(int(self.hoje.year) - 1)
+                            # Caso a tabela não possua data e foi marcado o checkbox data o programa abre a entrada da data
+                            if condicao_data == 1:
+                                self.mensagem_data()
+                            # Caso a tabela possua data e não foi marcado o checkbox data o programa vai criar as tabelas
+                            else:
+                                self.verifica_coluna()
+
+                        except Exception:
+                            self.primeiro_aviso = 'Erro na pasta Base'
+                            self.segundo_aviso = 'Problemas com as tabelas'
+                            self.aviso()
+
 
             except Exception:
                 self.primeiro_aviso = 'Erro no Saldo'
@@ -567,9 +628,14 @@ class Main:
             if self.plano == 'Visão Telefônica' and self.status == 'Autopatrocinado':
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
                 df_saldo_final = df_saldo_final.rename(columns={self.saldo_cotas_depois: self.saldo_cotas_antes})
-                xls11 = 'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(
-                    int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
-                df_saldo_final.to_excel(xls11, index=False)
+                if self.mes_spin.get() != 1:
+                    xls11 = 'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(
+                        int(self.mes_spin.get()) - 1).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
+                    df_saldo_final.to_excel(xls11, index=False)
+                else:
+                    xls11 = 'Base//Saldo//Autopatrocinado//Visão Telefônica//Saldo_' + str(12) + '_' + str(
+                        int(self.hoje.year) - 1) + '.xlsx'
+                    df_saldo_final.to_excel(xls11, index=False)
 
             elif self.plano == 'Visão Multi' and self.status == 'Autopatrocinado':
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
@@ -579,9 +645,15 @@ class Main:
 
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
                 df_saldo_final = df_saldo_final.rename(columns={self.saldo_cotas_depois: self.saldo_cotas_antes})
-                xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(int(self.mes_spin.get()) - 1).zfill(
-                    2) + '_' + str(self.hoje.year) + '.xlsx'
-                df_saldo_final.to_excel(xls11, index=False)
+                if self.mes_spin.get() != 1:
+                    xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(int(self.mes_spin.get()) - 1).zfill(
+                        2) + '_' + str(self.hoje.year) + '.xlsx'
+                    df_saldo_final.to_excel(xls11, index=False)
+                else:
+                    xls11 = 'Base//Saldo//Ativo//Visão Telefônica//Saldo_' + str(12) + '_' + str(
+                        int(self.hoje.year) - 1) + '.xlsx'
+                    df_saldo_final.to_excel(xls11, index=False)
+
 
             elif self.plano == 'Visão Telefônica' and self.status == 'Ativo':
                 df_saldo_final = self.df_saldo[['CPF', 'Status', self.saldo_cotas_depois]]
@@ -790,8 +862,8 @@ class Main:
 
         try:
             # Exporta a tabela análise, saldo e retirada dos ativos e autopatrocinados para o Excel
-            xls16 = 'Base//Analise//' + self.status + '//' + self.plano + '//Analise_' + str(self.mes_spin.get()).zfill(
-                2) + '_' + str(self.hoje.year) + '.xlsx'
+            xls16 = 'Base//Analise//' + self.status + '//' + self.plano + '//Analise_' + str(
+                self.mes_spin.get()).zfill(2) + '_' + str(self.hoje.year) + '.xlsx'
             analise.to_excel(xls16, index=False)
 
             df_retirar = analise[(analise[self.saldo_cotas_depois] < 0) & (

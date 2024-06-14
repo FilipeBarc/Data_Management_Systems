@@ -17,6 +17,8 @@ from tkinter import *
 import os
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import comtypes.client
 import locale
@@ -106,9 +108,11 @@ class Main:
         self.juros_spin.place(x=50, y=265)
 
         # Botões
+        self.root.bind("<Return>", (lambda event: self.funcao()))
         self.botao_gerar = tk.Button(self.root, text="Gerar Template", command=self.funcao)
         self.botao_gerar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_gerar.place(x=50, y=400)
+
         self.botao_reiniciar = tk.Button(self.root, text="Reiniciar", command=self.ativar)
         self.botao_reiniciar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_reiniciar.place(x=50, y=430)
@@ -166,16 +170,20 @@ class Main:
             total.append(df['Saldo participante'][i] + df['Saldo patrocinadora'][i])
         df['Total'] = total
 
-        dias = []
         if datetime.today().month == 1:
             anterior = f'25/12/{datetime.today().year - 1}'
         else:
             anterior = f'25/{str(datetime.today().month - 1).zfill(2)}/{datetime.today().year}'
 
+        dias = []
         for i in df.index:
-            novo = relativedelta(pd.to_datetime(anterior, format='%d/%m/%Y'),
-                                 pd.to_datetime(df['DataAdmissao'][i], format='%d/%m/%Y'))
-            dias.append(novo.years * 12 + novo.months)
+            if df['Status'][i] == 'AOP':
+                novo = relativedelta(df['DataDesligamento'][i], df['DataAdmissao'][i])
+                dias.append(novo.years * 12 + novo.months)
+            else:
+                novo = relativedelta(pd.to_datetime(anterior, format='%d/%m/%Y'),
+                                     pd.to_datetime(df['DataAdmissao'][i], format='%d/%m/%Y'))
+                dias.append(novo.years * 12 + novo.months)
         df['Dias em Meses'] = dias
 
         perc = []
@@ -257,7 +265,7 @@ class Main:
                   dez, quinze, vinte, imposto, liquido, taxa, pdf, dez1, quinze1, vinte1, dez2, quinze2, vinte2, meia,
                   payment, saldo10, saldo15, saldo20, saldo25, saldo30, saldo35, saldo40, imposto10, imposto15,
                   imposto20, imposto25, imposto30, imposto35, imposto40, liquido10, liquido15, liquido20, liquido25,
-                  liquido30, liquido35, liquido40, v10, v15, v20):
+                  liquido30, liquido35, liquido40, v10, v101, v102):
 
         apresentacao = Presentation(ppt)
         ppt_out = f'{saida}{id}.pptx'
@@ -311,10 +319,10 @@ class Main:
         self.substituir_texto(apresentacao, '{liquido40}', liquido40)
 
         apresentacao.save(ppt_out)
-        self.imagens(ppt_out, cpf, saida, pdf, id, payment, v10, v15, v20)
+        self.imagens(ppt_out, cpf, saida, pdf, id, payment, v10, v101, v102)
 
     # Função que insere as imagens no PPT
-    def imagens(self, ppt_out, cpf, saida, pdf, id, payment, v10, v15, v20):
+    def imagens(self, ppt_out, cpf, saida, pdf, id, payment, v10, v101, v102):
         prs = Presentation(ppt_out)
         slide = prs.slides[1]
         img_path = f"{saida}foto.png"
@@ -365,14 +373,34 @@ class Main:
         slide.shapes.add_picture(img_path2, left2, top1, width1, height1)
         slide.shapes.add_picture(img_path3, left3, top1, width1, height1)
 
-        if v10 <= 0 or v15 <= 0 or v20 <= 0:
+        if v10 <= 0 and v101 <= 0 and v102 <= 0 and payment != 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[2])
+            xml_slides.remove(slides[3])
+            xml_slides.remove(slides[4])
+
+        if v10 <= 0 and v101 <= 0 and v102 > 0 and payment != 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[2])
+            xml_slides.remove(slides[3])
+
+        if v10 <= 0 and v101 > 0 and v102 > 0 and payment != 0:
             xml_slides = prs.slides._sldIdLst
             slides = list(xml_slides)
             xml_slides.remove(slides[2])
 
-        if payment == 0:
+        if v10 > 0 and payment == 0:
             xml_slides = prs.slides._sldIdLst
             slides = list(xml_slides)
+            xml_slides.remove(slides[3])
+            xml_slides.remove(slides[4])
+
+        if v10 <= 0 and payment == 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[2])
             xml_slides.remove(slides[3])
             xml_slides.remove(slides[4])
 
@@ -486,6 +514,7 @@ class Main:
             ax.legend(loc='lower right', fontsize='x-small', labels=['Participante', 'Patrocinadora'],
                       frameon=False)
             plt.savefig(f'{saida}foto.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Calculo do juros compostos para os 3 gráficos do terceiro slide
@@ -576,6 +605,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v3 + v20)
             plt.savefig(f'{saida}foto1.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Criação do segundo gráfico de 15 anos
@@ -597,6 +627,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v3 + v20)
             plt.savefig(f'{saida}foto2.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Criação do terceiro gráfico de 15 anos
@@ -618,6 +649,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v3 + v20)
             plt.savefig(f'{saida}foto3.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Criação das variáveis de 10, 15 e 20 anos, e as de valor bruto, imposto e valor líquido
@@ -702,6 +734,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v7101 + v201)
             plt.savefig(f'{saida}foto4.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o segundo gráfico de 15 anos da simulação com metade da comtribuição
@@ -723,6 +756,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v7151 + v201)
             plt.savefig(f'{saida}foto5.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o segundo gráfico de 20 anos da simulação com metade da comtribuição
@@ -744,6 +778,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v7201 + v201)
             plt.savefig(f'{saida}foto6.png', transparent=True)
+            plt.clf()
             plt.close()
             time.sleep(1)
 
@@ -824,6 +859,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v7102 + v202)
             plt.savefig(f'{saida}foto7.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o terceiro gráfico de 15 anos da simulação com a comtribuição total
@@ -845,6 +881,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v7152 + v202)
             plt.savefig(f'{saida}foto8.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o terceiro gráfico de 20 anos da simulação com a comtribuição total
@@ -866,6 +903,7 @@ class Main:
                       frameon=False)
             ax.set_ylim(top=v7202 + v202)
             plt.savefig(f'{saida}foto9.png', transparent=True)
+            plt.clf()
             plt.close()
             time.sleep(1)
 
@@ -879,7 +917,7 @@ class Main:
                            saida, plano, dez, quinze, vinte, imposto, liquido, taxa, pdf, dez1, quinze1, vinte1,
                            dez2, quinze2, vinte2, meiaparcela, payment, saldo10, saldo15, saldo20, saldo25, saldo30,
                            saldo35, saldo40, imposto10, imposto15, imposto20, imposto25, imposto30, imposto35, imposto40,
-                           liquido10, liquido15, liquido20, liquido25, liquido30, liquido35, liquido40, v10, v15, v20)
+                           liquido10, liquido15, liquido20, liquido25, liquido30, liquido35, liquido40, v10, v101, v102)
 
             # Contador
             self.quant += 1
@@ -1204,6 +1242,7 @@ class Main:
                     browser.switch_to.frame(ipquatrob)
 
                 df_total = []
+                df_base = pd.read_excel('Base//tabela_modelo.xlsx')
                 for x in range(1, counter):
                     df = pd.read_excel(directory + f'\\{i}_{x}.xlsx')
                     df = df[1:]
@@ -1223,11 +1262,25 @@ class Main:
                 df_total['data_admissao'] = pd.to_datetime(df_total['data_admissao'], format="%d/%m/%Y")
                 df_total['data_desligamento'] = pd.to_datetime(df_total['data_desligamento'], format="%d/%m/%Y")
 
-                dias = []
-                for x in df_total.index:
-                    novo = relativedelta(df_total['data_desligamento'][x], df_total['data_admissao'][x])
-                    dias.append(novo.years * 12 + novo.months)
-                df_total['meses'] = dias
+                status = df_base[df_base['ParticipanteSA'] == i]['Status'].values[0]
+                if status == 'AOP':
+                    dias = []
+                    for x in df_total.index:
+                        novo = relativedelta(df_total['data_desligamento'][x], df_total['data_admissao'][x])
+                        dias.append(novo.years * 12 + novo.months)
+                    df_total['meses'] = dias
+                else:
+                    dias = []
+                    if datetime.today().month == 1:
+                        anterior = f'25/12/{datetime.today().year - 1}'
+                    else:
+                        anterior = f'25/{str(datetime.today().month - 1).zfill(2)}/{datetime.today().year}'
+
+                    for a in df_total.index:
+                        novo = relativedelta(pd.to_datetime(anterior, format='%d/%m/%Y'),
+                                             pd.to_datetime(df_total['data_admissao'][a], format='%d/%m/%Y'))
+                        dias.append(novo.years * 12 + novo.months)
+                    df_total['meses'] = dias
 
                 perc = []
                 for x in df_total.index:

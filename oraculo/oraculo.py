@@ -17,6 +17,8 @@ from tkinter import *
 import os
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import comtypes.client
 import locale
@@ -115,6 +117,7 @@ class Main:
         self.juros_spin.place(x=50, y=265)
 
         # Botões
+        self.root.bind("<Return>", (lambda event: self.funcao()))
         self.botao_gerar = tk.Button(self.root, text="Gerar Template", command=self.funcao)
         self.botao_gerar.config(width=16, bg='#ffffff', activebackground="#e6e6e6", activeforeground="Black")
         self.botao_gerar.place(x=50, y=400)
@@ -193,8 +196,16 @@ class Main:
         df_full['DataAdmissao'] = pd.to_datetime(df_full['DataAdmissao'], format="%d/%m/%Y")
         df_full['Idade'] = df_full['DataNascimento'].apply(lambda x:
                            (datetime.now() - relativedelta(years=x.year)).year)
-        df_full['Anos_Adesao'] = df_full['DataAdesao'].apply(lambda x:
-                                 (datetime.now() - relativedelta(years=x.year)).year)
+
+        dias = []
+        for x in df_full.index:
+            novo = relativedelta(pd.to_datetime(df_full['DataAdesao'][x]), datetime.now())
+            if novo.years == 0:
+                dias.append(1)
+            else:
+                dias.append(novo.years)
+        df_full['Anos_Adesao'] = dias
+
         df_full['Anos_Admissao'] = df_full['DataAdmissao'].apply(lambda x:
                                    (datetime.now() - relativedelta(years=x.year)).year)
 
@@ -403,6 +414,7 @@ class Main:
 
         lista_idade = []
         lista_plano = []
+        aposentadoria = []
         for i in df.index:
             idade = 50 - df['Idade'][i]
             plano = 5 - df['Tempo Plano'][i]
@@ -425,8 +437,9 @@ class Main:
                  'Total', 'Percentual de resgate', 'Valor resgatavel', 'Valor bruto de resgate', 'Dias em Meses',
                  'Tempo elegibilidade idade', 'Tempo elegibilidade plano','Previsão', 'Pagamentos', 'Idade']]
 
-        df_save = df[['CPF','Nome', 'Previsão']]
-        df_save.to_excel("template-resgate//previsao.xlsx")
+
+        df_save = df[['CPF', 'ParticipanteSA', 'Nome', 'Previsão']]
+        df_save.to_excel("template-resgate//previsao.xlsx", index=False)
 
         self.gerador(df)
         self.primeiro_aviso = 'Comunicados gerados com'
@@ -460,7 +473,7 @@ class Main:
     # Função que busca as chaves dentro o PPT
     def principal(self, cpf, valor, parcela, com, sem, renda, patrocina, percentual, resgate, bruto, id, ppt, saida,
                   aposentado, plano, dez, quinze, vinte, taxa, tag, pdf, dez1, quinze1, vinte1, dez2, quinze2, vinte2,
-                  meia, cinquenta, text, payment):
+                  meia, cinquenta, text, payment, v10, v101, v102):
         apresentacao = Presentation(ppt)
         ppt_out = f'{saida}{id}.pptx'
 
@@ -489,10 +502,10 @@ class Main:
         self.substituir_texto(apresentacao, '{texto}', text)
 
         apresentacao.save(ppt_out)
-        self.imagens(ppt_out, cpf, saida, aposentado, tag, pdf, id, payment)
+        self.imagens(ppt_out, cpf, saida, aposentado, tag, pdf, id, payment, v10, v101, v102)
 
     # Função que insere as imagens no PPT
-    def imagens(self, ppt_out, cpf, saida, aposentado, tag, pdf, id, payment):
+    def imagens(self, ppt_out, cpf, saida, aposentado, tag, pdf, id, payment, v10, v101, v102):
         prs = Presentation(ppt_out)
         slide = prs.slides[1]
         img_path = f"{saida}foto.png"
@@ -560,9 +573,35 @@ class Main:
                 xml_slides = prs.slides._sldIdLst
                 slides = list(xml_slides)
                 xml_slides.remove(slides[9])
-        if payment == 0:
+
+        if v10 <= 0 and v101 <= 0 and v102 <= 0 and payment != 0:
             xml_slides = prs.slides._sldIdLst
             slides = list(xml_slides)
+            xml_slides.remove(slides[2])
+            xml_slides.remove(slides[3])
+            xml_slides.remove(slides[4])
+
+        if v10 <= 0 and v101 <= 0 and v102 > 0 and payment != 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[2])
+            xml_slides.remove(slides[3])
+
+        if v10 <= 0 and v101 > 0 and v102 > 0 and payment != 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[2])
+
+        if v10 > 0 and payment == 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[3])
+            xml_slides.remove(slides[4])
+
+        if v10 <= 0 and payment == 0:
+            xml_slides = prs.slides._sldIdLst
+            slides = list(xml_slides)
+            xml_slides.remove(slides[2])
             xml_slides.remove(slides[3])
             xml_slides.remove(slides[4])
 
@@ -583,7 +622,7 @@ class Main:
     # Função que transforma o PPT em PDF
     def ppttopdf(self, cpf, pdf, id):
         entrada = f'{pdf}{id}.pptx'
-        saida = f'{pdf}{id}_{cpf[-4:]}.pdf'
+        saida = f'{pdf}{id}.pdf'
         powerpoint = comtypes.client.CreateObject("Powerpoint.Application", pythoncom.CoInitialize())
         deck = powerpoint.Presentations.Open(entrada)
         deck.ExportAsFixedFormat(saida, 32)
@@ -705,7 +744,9 @@ class Main:
             ax.legend(loc='lower right', fontsize='x-small', labels=['Participante', 'Patrocinadora'],
                       frameon=False)
             plt.savefig(f'{saida}foto.png', transparent=True)
+            plt.clf()
             plt.close()
+
 
             # Calculo do juros compostos para os 3 gráficos do terceiro slide
             v3 = v1 + v2
@@ -799,6 +840,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v3 + v20)
             plt.savefig(f'{saida}foto1.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Criação do segundo gráfico de 15 anos
@@ -820,6 +862,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v3 + v20)
             plt.savefig(f'{saida}foto2.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Criação do terceiro gráfico de 15 anos
@@ -841,6 +884,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v3 + v20)
             plt.savefig(f'{saida}foto3.png', transparent=True)
+            plt.clf()
             plt.close()
 
             # Criação das variáveis de 10, 15 e 20 anos, e as de valor bruto, imposto e valor líquido
@@ -922,6 +966,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v7101 + v201)
             plt.savefig(f'{saida}foto4.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o segundo gráfico de 15 anos da simulação com metade da contribuição
@@ -943,6 +988,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v7151 + v201)
             plt.savefig(f'{saida}foto5.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o segundo gráfico de 20 anos da simulação com metade da contribuição
@@ -964,6 +1010,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v7201 + v201)
             plt.savefig(f'{saida}foto6.png', transparent=True)
+            plt.clf()
             plt.close()
             time.sleep(1)
 
@@ -1044,6 +1091,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v7102 + v202)
             plt.savefig(f'{saida}foto7.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o terceiro gráfico de 15 anos da simulação com a contribuição total
@@ -1065,6 +1113,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v7152 + v202)
             plt.savefig(f'{saida}foto8.png', transparent=True)
+            plt.clf()
             plt.close()
 
             ### criando o terceiro gráfico de 20 anos da simulação com a contribuição total
@@ -1086,6 +1135,7 @@ class Main:
                       fontsize='x-small', frameon=False)
             ax.set_ylim(top=v7202 + v202)
             plt.savefig(f'{saida}foto9.png', transparent=True)
+            plt.clf()
             plt.close()
             time.sleep(1)
 
@@ -1097,7 +1147,7 @@ class Main:
             # Chamando a função que troca as variáveis no PPT
             self.principal(cpf, valor, parcela, com, sem, renda, patrocina, percentual, resgate, bruto, id, template,
                            saida, aposentado, plano, dez, quinze, vinte, taxa, tag, pdf, dez1, quinze1, vinte1, dez2,
-                           quinze2, vinte2, meia, cinquenta, text, payment)
+                           quinze2, vinte2, meia, cinquenta, text, payment, v10, v101, v102)
 
             # Contador
             self.quant += 1
