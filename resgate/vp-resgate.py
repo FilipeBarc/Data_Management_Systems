@@ -1,16 +1,18 @@
 # pip install pandas
+# pip install matplotlib
+# pip install selenium
+# pip install comtypes
+# pip install python-pptx
+# pip install PyPDF2
+# pip install requests
+# pip install msedge-selenium-tools selenium==3.141
+# pip install pywin32
+# pip install pyinstaller
 # pip install openpyxl
+# pip install --upgrade urllib3==1.26.16
+
 # pip install fsspec
 # pip install Pyarrow
-# pip install matplotlib
-# pip install python-pptx
-# pip install comtypes
-# pip install PyPDF2
-# pip install pywin32
-# pip install requests
-# pip install pyinstaller
-# pip install selenium
-# pip install msedge-selenium-tools selenium==3.141
 
 import tkinter as tk
 from tkinter import *
@@ -22,6 +24,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import comtypes.client
 import locale
+import pdfkit
 import time
 from datetime import datetime, timedelta
 from pptx import Presentation
@@ -261,14 +264,14 @@ class Main:
                                 self.manter_formatacao_original(novo_paragrafo, fonte_original)
 
     # Função que busca as chaves dentro o PPT
-    def principal(self, cpf, nome, valor, parcela, renda, patrocina, percentual, resgate, bruto, id, ppt, saida, plano,
+    def principal(self, cpf, nome, valor, parcela, renda, patrocina, percentual, resgate, bruto, idi, ppt, saida, plano,
                   dez, quinze, vinte, imposto, liquido, taxa, pdf, dez1, quinze1, vinte1, dez2, quinze2, vinte2, meia,
                   payment, saldo10, saldo15, saldo20, saldo25, saldo30, saldo35, saldo40, imposto10, imposto15,
                   imposto20, imposto25, imposto30, imposto35, imposto40, liquido10, liquido15, liquido20, liquido25,
                   liquido30, liquido35, liquido40, v10, v101, v102):
 
         apresentacao = Presentation(ppt)
-        ppt_out = f'{saida}{id}.pptx'
+        ppt_out = f'{saida}{idi}.pptx'
 
         self.substituir_texto(apresentacao, '{nome}', nome)
         self.substituir_texto(apresentacao, '{renda}', renda)
@@ -319,10 +322,10 @@ class Main:
         self.substituir_texto(apresentacao, '{liquido40}', liquido40)
 
         apresentacao.save(ppt_out)
-        self.imagens(ppt_out, cpf, saida, pdf, id, payment, v10, v101, v102)
+        self.imagens(ppt_out, cpf, saida, pdf, idi, payment, v10, v101, v102)
 
     # Função que insere as imagens no PPT
-    def imagens(self, ppt_out, cpf, saida, pdf, id, payment, v10, v101, v102):
+    def imagens(self, ppt_out, cpf, saida, pdf, idi, payment, v10, v101, v102):
         prs = Presentation(ppt_out)
         slide = prs.slides[1]
         img_path = f"{saida}foto.png"
@@ -414,28 +417,28 @@ class Main:
         os.remove(f"{saida}foto8.png")
         os.remove(f"{saida}foto9.png")
 
-        prs.save(f'{saida}{id}.pptx')
+        prs.save(f'{saida}{idi}.pptx')
         time.sleep(1)
-        self.ppttopdf(cpf, pdf, id, saida)
+        self.ppttopdf(cpf, pdf, idi)
 
     # Função que transforma o PPT em PDF
-    def ppttopdf(self, cpf, pdf, id, out):
-        entrada = f'{pdf}{id}.pptx'
-        saida = f'{pdf}{id}.pdf'
+    def ppttopdf(self, cpf, pdf, idi):
+        entrada = f'{pdf}{idi}.pptx'
+        saida = f'{pdf}{idi}.pdf'
         powerpoint = comtypes.client.CreateObject("Powerpoint.Application", pythoncom.CoInitialize())
         deck = powerpoint.Presentations.Open(entrada)
         deck.ExportAsFixedFormat(saida, 32)
         deck.Close()
         powerpoint.Quit()
         sleep(1)
-        self.encriptar(cpf, saida, entrada)
+        os.remove(entrada)
+        self.encriptar(cpf, saida)
 
     # Função que faz a encriptação do PDF
-    def encriptar(self, cpf, saida, entrada):
+    def encriptar(self, cpf, saida):
         out = PdfWriter()
         file = PdfReader(saida)
         num = len(file.pages)
-        os.remove(entrada)
         for idx in range(num):
             page = file.pages[idx]
             out.add_page(page)
@@ -451,477 +454,483 @@ class Main:
         saida = "Templates//"
         # Primeira opção dos resgates
         for i in base.index:
-            # Coleta das variáveis
-            cpf = str(base['CPF'][i])
-            sa = str(base['ParticipanteSA'][i])
-            nome = base['Primeiro nome'][i]
-            renda = locale.currency(base['Saldo participante'][i], symbol=True, grouping=True, international=False)
-            patrocina = locale.currency(base['Saldo patrocinadora'][i], symbol=True, grouping=True, international=False)
-            valor = locale.currency(base['Total'][i], symbol=True, grouping=True, international=False)
-            percentual = str(base['Percentual de resgate'][i]) + '%'
-            resgate = locale.currency(base['Valor resgatavel'][i], symbol=True, grouping=True, international=False)
-            bruto = locale.currency(base['Valor bruto de resgate'][i], symbol=True, grouping=True, international=False)
-            plano = base['Plano'][i]
-            payment = base['Pagamentos'][i]
-            parcela = locale.currency(payment, symbol=True, grouping=True, international=False)
-            meiaparcela = locale.currency(payment / 2, symbol=True, grouping=True, international=False)
+            try:
+                # Coleta das variáveis
+                cpf = str(base['CPF'][i])
+                sa = str(base['ParticipanteSA'][i])
+                nome = base['Primeiro nome'][i]
+                renda = locale.currency(base['Saldo participante'][i], symbol=True, grouping=True, international=False)
+                patrocina = locale.currency(base['Saldo patrocinadora'][i], symbol=True, grouping=True, international=False)
+                valor = locale.currency(base['Total'][i], symbol=True, grouping=True, international=False)
+                percentual = str(base['Percentual de resgate'][i]) + '%'
+                resgate = locale.currency(base['Valor resgatavel'][i], symbol=True, grouping=True, international=False)
+                bruto = locale.currency(base['Valor bruto de resgate'][i], symbol=True, grouping=True, international=False)
+                plano = base['Plano'][i]
+                payment = base['Pagamentos'][i]
+                parcela = locale.currency(payment, symbol=True, grouping=True, international=False)
+                meiaparcela = locale.currency(payment / 2, symbol=True, grouping=True, international=False)
 
-            sal10 = base['saldo10'][i]
-            sal15 = base['saldo15'][i]
-            sal20 = base['saldo20'][i]
-            sal25 = base['saldo25'][i]
-            sal30 = base['saldo30'][i]
-            sal35 = base['saldo35'][i]
-            sal40 = base['saldo40'][i]
+                sal10 = base['saldo10'][i]
+                sal15 = base['saldo15'][i]
+                sal20 = base['saldo20'][i]
+                sal25 = base['saldo25'][i]
+                sal30 = base['saldo30'][i]
+                sal35 = base['saldo35'][i]
+                sal40 = base['saldo40'][i]
 
-            saldo10 = locale.currency(sal10, symbol=True, grouping=True, international=False)
-            saldo15 = locale.currency(sal15, symbol=True, grouping=True, international=False)
-            saldo20 = locale.currency(sal20, symbol=True, grouping=True, international=False)
-            saldo25 = locale.currency(sal25, symbol=True, grouping=True, international=False)
-            saldo30 = locale.currency(sal30, symbol=True, grouping=True, international=False)
-            saldo35 = locale.currency(sal35, symbol=True, grouping=True, international=False)
-            saldo40 = locale.currency(sal40, symbol=True, grouping=True, international=False)
+                saldo10 = locale.currency(sal10, symbol=True, grouping=True, international=False)
+                saldo15 = locale.currency(sal15, symbol=True, grouping=True, international=False)
+                saldo20 = locale.currency(sal20, symbol=True, grouping=True, international=False)
+                saldo25 = locale.currency(sal25, symbol=True, grouping=True, international=False)
+                saldo30 = locale.currency(sal30, symbol=True, grouping=True, international=False)
+                saldo35 = locale.currency(sal35, symbol=True, grouping=True, international=False)
+                saldo40 = locale.currency(sal40, symbol=True, grouping=True, international=False)
 
-            imp40 = sal10 * 0.1 + sal15 * 0.15 + sal20 * 0.2 + sal25 * 0.25 + sal30 * 0.3 + sal35 * 0.35
-            imposto10 = locale.currency(sal10 * 0.1, symbol=True, grouping=True, international=False)
-            imposto15 = locale.currency(sal15 * 0.15, symbol=True, grouping=True, international=False)
-            imposto20 = locale.currency(sal20 * 0.2, symbol=True, grouping=True, international=False)
-            imposto25 = locale.currency(sal25 * 0.25, symbol=True, grouping=True, international=False)
-            imposto30 = locale.currency(sal30 * 0.3, symbol=True, grouping=True, international=False)
-            imposto35 = locale.currency(sal35 * 0.35, symbol=True, grouping=True, international=False)
-            imposto40 = locale.currency(imp40, symbol=True, grouping=True, international=False)
+                imp40 = sal10 * 0.1 + sal15 * 0.15 + sal20 * 0.2 + sal25 * 0.25 + sal30 * 0.3 + sal35 * 0.35
+                imposto10 = locale.currency(sal10 * 0.1, symbol=True, grouping=True, international=False)
+                imposto15 = locale.currency(sal15 * 0.15, symbol=True, grouping=True, international=False)
+                imposto20 = locale.currency(sal20 * 0.2, symbol=True, grouping=True, international=False)
+                imposto25 = locale.currency(sal25 * 0.25, symbol=True, grouping=True, international=False)
+                imposto30 = locale.currency(sal30 * 0.3, symbol=True, grouping=True, international=False)
+                imposto35 = locale.currency(sal35 * 0.35, symbol=True, grouping=True, international=False)
+                imposto40 = locale.currency(imp40, symbol=True, grouping=True, international=False)
 
-            liq40 = ((sal10 - sal10 * 0.1) + (sal15 - sal15 * 0.15) + (sal20 - sal20 * 0.2) + (sal25 - sal25 * 0.25) +
-                     (sal30 - sal30 * 0.3) + (sal35 - sal35 * 0.35))
-            liquido10 = locale.currency(sal10 - sal10 * 0.1, symbol=True, grouping=True, international=False)
-            liquido15 = locale.currency(sal15 - sal15 * 0.15, symbol=True, grouping=True, international=False)
-            liquido20 = locale.currency(sal20 - sal20 * 0.2, symbol=True, grouping=True, international=False)
-            liquido25 = locale.currency(sal25 - sal25 * 0.25, symbol=True, grouping=True, international=False)
-            liquido30 = locale.currency(sal30 - sal30 * 0.3, symbol=True, grouping=True, international=False)
-            liquido35 = locale.currency(sal35 - sal35 * 0.35, symbol=True, grouping=True, international=False)
-            liquido40 = locale.currency(liq40, symbol=True, grouping=True, international=False)
+                liq40 = ((sal10 - sal10 * 0.1) + (sal15 - sal15 * 0.15) + (sal20 - sal20 * 0.2) + (sal25 - sal25 * 0.25) +
+                         (sal30 - sal30 * 0.3) + (sal35 - sal35 * 0.35))
+                liquido10 = locale.currency(sal10 - sal10 * 0.1, symbol=True, grouping=True, international=False)
+                liquido15 = locale.currency(sal15 - sal15 * 0.15, symbol=True, grouping=True, international=False)
+                liquido20 = locale.currency(sal20 - sal20 * 0.2, symbol=True, grouping=True, international=False)
+                liquido25 = locale.currency(sal25 - sal25 * 0.25, symbol=True, grouping=True, international=False)
+                liquido30 = locale.currency(sal30 - sal30 * 0.3, symbol=True, grouping=True, international=False)
+                liquido35 = locale.currency(sal35 - sal35 * 0.35, symbol=True, grouping=True, international=False)
+                liquido40 = locale.currency(liq40, symbol=True, grouping=True, international=False)
 
-            # Criação da primeira imagem em gráfico pizza
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            explode = (0.01, 0.01)
-            v1 = list(base[['Saldo participante', 'Saldo patrocinadora']].iloc[i])[0]
-            v2 = list(base[['Saldo participante', 'Saldo patrocinadora']].iloc[i])[1]
-            ax = base[['Saldo participante', 'Saldo patrocinadora']].iloc[i].plot.pie(colors=["#58aa7a", "#065d70"],
-                shadow=True, explode=explode, labels=None, autopct=lambda p: locale.currency(p * (v1 + v2) / 100,
-                symbol=True, grouping=True, international=False), textprops={'color': "w", 'weight': 'bold'})
-            ax.yaxis.set_visible(False)
-            ax.legend(loc='lower right', fontsize='x-small', labels=['Participante', 'Patrocinadora'],
-                      frameon=False)
-            plt.savefig(f'{saida}foto.png', transparent=True)
-            plt.clf()
-            plt.close()
+                # Criação da primeira imagem em gráfico pizza
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+                explode = (0.01, 0.01)
+                v1 = list(base[['Saldo participante', 'Saldo patrocinadora']].iloc[i])[0]
+                v2 = list(base[['Saldo participante', 'Saldo patrocinadora']].iloc[i])[1]
+                ax = base[['Saldo participante', 'Saldo patrocinadora']].iloc[i].plot.pie(colors=["#58aa7a", "#065d70"],
+                    shadow=True, explode=explode, labels=None, autopct=lambda p: locale.currency(p * (v1 + v2) / 100,
+                    symbol=True, grouping=True, international=False), textprops={'color': "w", 'weight': 'bold'})
+                ax.yaxis.set_visible(False)
+                ax.legend(loc='lower right', fontsize='x-small', labels=['Participante', 'Patrocinadora'],
+                          frameon=False)
+                plt.savefig(f'{saida}foto.png', transparent=True)
+                plt.clf()
+                plt.close()
 
-            # Calculo do juros compostos para os 3 gráficos do terceiro slide
-            v3 = v1 + v2
-            taxa = str(self.juros_spin.get())
-            tx = float(taxa.replace(',','.')) / 100
-            tx_mes = (1 + tx) ** (1 / 12) - 1
+                # Calculo do juros compostos para os 3 gráficos do terceiro slide
+                v3 = v1 + v2
+                taxa = str(self.juros_spin.get())
+                tx = float(taxa.replace(',','.')) / 100
+                tx_mes = (1 + tx) ** (1 / 12) - 1
 
-            if plano == 'Visão Multi':
-                pri = 55.00 / 12
-                seg = (1 + 0.0069) ** (1 / 12) - 1
-                ter = (1 + 0.0046) ** (1 / 12) - 1
-                qua = (1 + 0.0028) ** (1 / 12) - 1
-                qui = (1 + 0.0014) ** (1 / 12) - 1
-                sex = 1900.00 / 12
-            else:
-                pri = 93.00 / 12
-                seg = (1 + 0.0102) ** (1 / 12) - 1
-                ter = (1 + 0.0092) ** (1 / 12) - 1
-                qua = (1 + 0.0077) ** (1 / 12) - 1
-                qui = (1 + 0.0037) ** (1 / 12) - 1
-                sex = 3140.00 / 12
+                if plano == 'Visão Multi':
+                    pri = 55.00 / 12
+                    seg = (1 + 0.0069) ** (1 / 12) - 1
+                    ter = (1 + 0.0046) ** (1 / 12) - 1
+                    qua = (1 + 0.0028) ** (1 / 12) - 1
+                    qui = (1 + 0.0014) ** (1 / 12) - 1
+                    sex = 1900.00 / 12
+                else:
+                    pri = 93.00 / 12
+                    seg = (1 + 0.0102) ** (1 / 12) - 1
+                    ter = (1 + 0.0092) ** (1 / 12) - 1
+                    qua = (1 + 0.0077) ** (1 / 12) - 1
+                    qui = (1 + 0.0037) ** (1 / 12) - 1
+                    sex = 3140.00 / 12
 
-            value = v3
-            for j in range(1, 121):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1)
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1)
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1)
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1)
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex
-            v10 = value - v3
+                value = v3
+                for j in range(1, 121):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1)
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1)
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1)
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1)
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex
+                v10 = value - v3
 
-            value = v3
-            for j in range(1, 181):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1)
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1)
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1)
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1)
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex
-            v15 = value - v3
+                value = v3
+                for j in range(1, 181):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1)
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1)
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1)
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1)
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex
+                v15 = value - v3
 
-            value = v3
-            for j in range(1, 241):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1)
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1)
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1)
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1)
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex
-            v20 = value - v3
+                value = v3
+                for j in range(1, 241):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1)
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1)
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1)
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1)
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex
+                v20 = value - v3
 
-            # Criação do primeiro gráfico de dez anos
-            ax = pd.DataFrame([[v3, v10]],columns=['Contribuição','Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v3, symbol=True, grouping=True,
-                                      international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v10, symbol=True, grouping=True,
-                                      international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v3 + v20)
-            plt.savefig(f'{saida}foto1.png', transparent=True)
-            plt.clf()
-            plt.close()
-
-            # Criação do segundo gráfico de 15 anos
-            ax = pd.DataFrame([[v3, v15]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v3, symbol=True, grouping=True,
-                                      international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v15, symbol=True, grouping=True,
-                                      international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v3 + v20)
-            plt.savefig(f'{saida}foto2.png', transparent=True)
-            plt.clf()
-            plt.close()
-
-            # Criação do terceiro gráfico de 15 anos
-            ax = pd.DataFrame([[v3, v20]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v3, symbol=True, grouping=True,
-                                      international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v20, symbol=True, grouping=True,
-                                      international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v3 + v20)
-            plt.savefig(f'{saida}foto3.png', transparent=True)
-            plt.clf()
-            plt.close()
-
-            # Criação das variáveis de 10, 15 e 20 anos, e as de valor bruto, imposto e valor líquido
-            dez = locale.currency(v3 + v10, symbol=True, grouping=True, international=False)
-            quinze = locale.currency(v3 + v15, symbol=True, grouping=True, international=False)
-            vinte = locale.currency(v3 + v20, symbol=True, grouping=True, international=False)
-            valor_bruto = base['Valor bruto de resgate'][i]
-            imposto = locale.currency(valor_bruto * 0.15, symbol=True, grouping=True, international=False)
-            liquido = locale.currency(valor_bruto - valor_bruto * 0.15, symbol=True, grouping=True, international=False)
-
-            ### calculando os juros compostos com metade da contribuição
-            v7 = v1 + v2
-            par = payment / 2
-            value = v7
-
-            for j in range(1, 121):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri + par
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex + par
-            v7101 = v7 + par * 120
-            v101 = value - v7101
-            value = v7
-
-            for j in range(1, 181):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri + par
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex + par
-            v7151 = v7 + par * 180
-            v151 = value - v7151
-            value = v7
-
-            for j in range(1, 241):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri + par
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex + par
-            v7201 = v7 + par * 240
-            v201 = value - v7201
-
-            ### criando o segundo gráfico de 10 anos da simulação com metade da comtribuição
-            ax = pd.DataFrame([[v7101, v101]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v7101, symbol=True, grouping=True,
+                # Criação do primeiro gráfico de dez anos
+                ax = pd.DataFrame([[v3, v10]],columns=['Contribuição','Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v3, symbol=True, grouping=True,
                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v101, symbol=True, grouping=True,
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v10, symbol=True, grouping=True,
                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v7101 + v201)
-            plt.savefig(f'{saida}foto4.png', transparent=True)
-            plt.clf()
-            plt.close()
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v3 + v20)
+                plt.savefig(f'{saida}foto1.png', transparent=True)
+                plt.clf()
+                plt.close()
 
-            ### criando o segundo gráfico de 15 anos da simulação com metade da comtribuição
-            ax = pd.DataFrame([[v7151, v151]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v7151, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v151, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v7151 + v201)
-            plt.savefig(f'{saida}foto5.png', transparent=True)
-            plt.clf()
-            plt.close()
+                # Criação do segundo gráfico de 15 anos
+                ax = pd.DataFrame([[v3, v15]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v3, symbol=True, grouping=True,
+                                          international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v15, symbol=True, grouping=True,
+                                          international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v3 + v20)
+                plt.savefig(f'{saida}foto2.png', transparent=True)
+                plt.clf()
+                plt.close()
 
-            ### criando o segundo gráfico de 20 anos da simulação com metade da comtribuição
-            ax = pd.DataFrame([[v7201, v201]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v7201, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v201, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v7201 + v201)
-            plt.savefig(f'{saida}foto6.png', transparent=True)
-            plt.clf()
-            plt.close()
-            time.sleep(1)
+                # Criação do terceiro gráfico de 15 anos
+                ax = pd.DataFrame([[v3, v20]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v3, symbol=True, grouping=True,
+                                          international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v20, symbol=True, grouping=True,
+                                          international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v3 + v20)
+                plt.savefig(f'{saida}foto3.png', transparent=True)
+                plt.clf()
+                plt.close()
 
-            # criando as labels da segunda simulação
-            dez1 = locale.currency(v7101 + v101, symbol=True, grouping=True, international=False)
-            quinze1 = locale.currency(v7151 + v151, symbol=True, grouping=True, international=False)
-            vinte1 = locale.currency(v7201 + v201, symbol=True, grouping=True, international=False)
+                # Criação das variáveis de 10, 15 e 20 anos, e as de valor bruto, imposto e valor líquido
+                dez = locale.currency(v3 + v10, symbol=True, grouping=True, international=False)
+                quinze = locale.currency(v3 + v15, symbol=True, grouping=True, international=False)
+                vinte = locale.currency(v3 + v20, symbol=True, grouping=True, international=False)
+                valor_bruto = base['Valor bruto de resgate'][i]
+                imposto = locale.currency(valor_bruto * 0.15, symbol=True, grouping=True, international=False)
+                liquido = locale.currency(valor_bruto - valor_bruto * 0.15, symbol=True, grouping=True, international=False)
 
-            ### calculando os juros compostos com a comtribuição total
-            par = payment
-            value = v7
-            for j in range(1, 121):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri + par
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex + par
-            v7102 = v7 + par * 120
-            v102 = value - v7102
+                ### calculando os juros compostos com metade da contribuição
+                v7 = v1 + v2
+                par = payment / 2
+                value = v7
 
-            value = v7
-            for j in range(1, 181):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri + par
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex + par
-            v7152 = v7 + par * 180
-            v152 = value - v7152
+                for j in range(1, 121):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri + par
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex + par
+                v7101 = v7 + par * 120
+                v101 = value - v7101
+                value = v7
 
-            value = v7
-            for j in range(1, 241):
-                if value <= 10000:
-                    value = value + value * tx_mes - pri + par
-                elif value > 10000 and value <= 50000:
-                    value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
-                elif value > 50000 and value <= 200000:
-                    value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
-                elif value > 200000 and value <= 500000:
-                    value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
-                elif value > 500000 and value <= 1250000:
-                    value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
-                elif value > 1250000:
-                    value = value + value * tx_mes - sex + par
-            v7202 = v7 + par * 240
-            v202 = value - v7202
+                for j in range(1, 181):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri + par
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex + par
+                v7151 = v7 + par * 180
+                v151 = value - v7151
+                value = v7
 
-            ### criando o terceiro gráfico de 10 anos da simulação com a comtribuição total
-            ax = pd.DataFrame([[v7102, v102]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v7102, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v102, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v7102 + v202)
-            plt.savefig(f'{saida}foto7.png', transparent=True)
-            plt.clf()
-            plt.close()
+                for j in range(1, 241):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri + par
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex + par
+                v7201 = v7 + par * 240
+                v201 = value - v7201
 
-            ### criando o terceiro gráfico de 15 anos da simulação com a comtribuição total
-            ax = pd.DataFrame([[v7152, v152]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v7152, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v152, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v7152 + v202)
-            plt.savefig(f'{saida}foto8.png', transparent=True)
-            plt.clf()
-            plt.close()
+                ### criando o segundo gráfico de 10 anos da simulação com metade da comtribuição
+                ax = pd.DataFrame([[v7101, v101]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v7101, symbol=True, grouping=True,
+                                              international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v101, symbol=True, grouping=True,
+                                              international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v7101 + v201)
+                plt.savefig(f'{saida}foto4.png', transparent=True)
+                plt.clf()
+                plt.close()
 
-            ### criando o terceiro gráfico de 20 anos da simulação com a comtribuição total
-            ax = pd.DataFrame([[v7202, v202]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
-                color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
-            ax.bar_label(ax.containers[0], labels=[locale.currency(v7202, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.bar_label(ax.containers[1], labels=[locale.currency(v202, symbol=True, grouping=True,
-                                           international=False)], label_type='center', color='w', weight='bold')
-            ax.yaxis.set_visible(False)
-            ax.xaxis.set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            handles, labels = plt.gca().get_legend_handles_labels()
-            order = [1, 0]
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
-                      frameon=False)
-            ax.set_ylim(top=v7202 + v202)
-            plt.savefig(f'{saida}foto9.png', transparent=True)
-            plt.clf()
-            plt.close()
-            time.sleep(1)
+                ### criando o segundo gráfico de 15 anos da simulação com metade da comtribuição
+                ax = pd.DataFrame([[v7151, v151]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v7151, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v151, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v7151 + v201)
+                plt.savefig(f'{saida}foto5.png', transparent=True)
+                plt.clf()
+                plt.close()
 
-            # criando as labels da terceira simulação
-            dez2 = locale.currency(v7102 + v102, symbol=True, grouping=True, international=False)
-            quinze2 = locale.currency(v7152 + v152, symbol=True, grouping=True, international=False)
-            vinte2 = locale.currency(v7202 + v202, symbol=True, grouping=True, international=False)
+                ### criando o segundo gráfico de 20 anos da simulação com metade da comtribuição
+                ax = pd.DataFrame([[v7201, v201]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v7201, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v201, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v7201 + v201)
+                plt.savefig(f'{saida}foto6.png', transparent=True)
+                plt.clf()
+                plt.close()
+                time.sleep(1)
 
-            # Chamando a função que troca as variáveis no PPT
-            self.principal(cpf, nome, valor, parcela, renda, patrocina, percentual, resgate, bruto, sa, template,
-                           saida, plano, dez, quinze, vinte, imposto, liquido, taxa, pdf, dez1, quinze1, vinte1,
-                           dez2, quinze2, vinte2, meiaparcela, payment, saldo10, saldo15, saldo20, saldo25, saldo30,
-                           saldo35, saldo40, imposto10, imposto15, imposto20, imposto25, imposto30, imposto35, imposto40,
-                           liquido10, liquido15, liquido20, liquido25, liquido30, liquido35, liquido40, v10, v101, v102)
+                # criando as labels da segunda simulação
+                dez1 = locale.currency(v7101 + v101, symbol=True, grouping=True, international=False)
+                quinze1 = locale.currency(v7151 + v151, symbol=True, grouping=True, international=False)
+                vinte1 = locale.currency(v7201 + v201, symbol=True, grouping=True, international=False)
 
-            # Contador
-            self.quant += 1
-            self.quantidade.set(f"Quantidade: {self.quant}")
+                ### calculando os juros compostos com a comtribuição total
+                par = payment
+                value = v7
+                for j in range(1, 121):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri + par
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex + par
+                v7102 = v7 + par * 120
+                v102 = value - v7102
+
+                value = v7
+                for j in range(1, 181):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri + par
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex + par
+                v7152 = v7 + par * 180
+                v152 = value - v7152
+
+                value = v7
+                for j in range(1, 241):
+                    if value <= 10000:
+                        value = value + value * tx_mes - pri + par
+                    elif value > 10000 and value <= 50000:
+                        value = value + value * ((1 + tx_mes) / (1 + seg) - 1) + par
+                    elif value > 50000 and value <= 200000:
+                        value = value + value * ((1 + tx_mes) / (1 + ter) - 1) + par
+                    elif value > 200000 and value <= 500000:
+                        value = value + value * ((1 + tx_mes) / (1 + qua) - 1) + par
+                    elif value > 500000 and value <= 1250000:
+                        value = value + value * ((1 + tx_mes) / (1 + qui) - 1) + par
+                    elif value > 1250000:
+                        value = value + value * tx_mes - sex + par
+                v7202 = v7 + par * 240
+                v202 = value - v7202
+
+                ### criando o terceiro gráfico de 10 anos da simulação com a comtribuição total
+                ax = pd.DataFrame([[v7102, v102]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v7102, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v102, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v7102 + v202)
+                plt.savefig(f'{saida}foto7.png', transparent=True)
+                plt.clf()
+                plt.close()
+
+                ### criando o terceiro gráfico de 15 anos da simulação com a comtribuição total
+                ax = pd.DataFrame([[v7152, v152]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v7152, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v152, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v7152 + v202)
+                plt.savefig(f'{saida}foto8.png', transparent=True)
+                plt.clf()
+                plt.close()
+
+                ### criando o terceiro gráfico de 20 anos da simulação com a comtribuição total
+                ax = pd.DataFrame([[v7202, v202]], columns=['Contribuição', 'Rentabilidade']).plot.bar(
+                    color=["#58aa7a", "#065d70"], stacked=True, edgecolor="w")
+                ax.bar_label(ax.containers[0], labels=[locale.currency(v7202, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.bar_label(ax.containers[1], labels=[locale.currency(v202, symbol=True, grouping=True,
+                                               international=False)], label_type='center', color='w', weight='bold')
+                ax.yaxis.set_visible(False)
+                ax.xaxis.set_visible(False)
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                handles, labels = plt.gca().get_legend_handles_labels()
+                order = [1, 0]
+                ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='lower right', fontsize='x-small',
+                          frameon=False)
+                ax.set_ylim(top=v7202 + v202)
+                plt.savefig(f'{saida}foto9.png', transparent=True)
+                plt.clf()
+                plt.close()
+                time.sleep(1)
+
+                # criando as labels da terceira simulação
+                dez2 = locale.currency(v7102 + v102, symbol=True, grouping=True, international=False)
+                quinze2 = locale.currency(v7152 + v152, symbol=True, grouping=True, international=False)
+                vinte2 = locale.currency(v7202 + v202, symbol=True, grouping=True, international=False)
+
+                # Chamando a função que troca as variáveis no PPT
+                self.principal(cpf, nome, valor, parcela, renda, patrocina, percentual, resgate, bruto, sa, template,
+                               saida, plano, dez, quinze, vinte, imposto, liquido, taxa, pdf, dez1, quinze1, vinte1,
+                               dez2, quinze2, vinte2, meiaparcela, payment, saldo10, saldo15, saldo20, saldo25, saldo30,
+                               saldo35, saldo40, imposto10, imposto15, imposto20, imposto25, imposto30, imposto35, imposto40,
+                               liquido10, liquido15, liquido20, liquido25, liquido30, liquido35, liquido40, v10, v101, v102)
+
+                # Contador
+                self.quant += 1
+                self.quantidade.set(f"Quantidade: {self.quant}")
+
+            except Exception:
+                self.primeiro_aviso = 'Erro no Participante SA'
+                self.segundo_aviso = str(base['ParticipanteSA'][i])
+                self.aviso()
 
 
     def valor_parcela(self, psa):

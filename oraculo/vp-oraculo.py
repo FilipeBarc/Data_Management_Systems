@@ -11,6 +11,7 @@
 # pip install pyinstaller
 # pip install selenium
 # pip install msedge-selenium-tools selenium==3.141
+# pip install --upgrade urllib3==1.26.16
 
 import tkinter as tk
 from tkinter import *
